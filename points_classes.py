@@ -1,6 +1,6 @@
 import pygame as pg
 import numpy as np
-
+from typing import Union
 
 
 
@@ -20,7 +20,7 @@ class Point:
                        (self.x, self.y), self.radius)
 
 
-    def set_surface(self, surface):
+    def set_surface(self, surface: pg.Surface):
         self.surface = surface
 
 
@@ -28,12 +28,12 @@ class Point:
         self.point_color = color    
 
 
-    def set_radius(self, radius):
+    def set_radius(self, radius: Union[float, int]):
         self.radius = radius 
         self.point_data['radius'] = self.radius
 
 
-    def set_coords(self, coords):
+    def set_coords(self, coords: Union[tuple, list, np.ndarray]):
         self.x, self.y = coords
         self.point_data['coordinates'] = np.array([self.x, self.y], dtype = 'd')
 
@@ -44,7 +44,9 @@ class MassPoint(Point):
         Class for weighted moving point of the horizontal and vertical ropes   
     '''
     
-    def __init__(self, id, mass, radius, start_coords, start_velocity):
+    def __init__(self, id: int, mass: Union[float, int], radius: Union[float, int], 
+                 start_coords: Union[tuple, list, np.ndarray], 
+                 start_velocity: Union[tuple, list, np.ndarray]):
         super().__init__()
         self.id = id
         self.set_coords(start_coords)
@@ -61,22 +63,22 @@ class MassPoint(Point):
         self.si_point_data = {'coordinates': None, 'velocities': None}
 
 
-    def update_coords(self, updated_x, updated_y):
+    def update_coords(self, updated_x: Union[float, int], updated_y: Union[float, int]):
         self.si_point_data['coordinates'] = np.array([updated_x, updated_y])
         self.x, self.y = self.meters_to_pixels()
         self.point_data['coordinates'] = np.array([self.x, self.y])
 
     
-    def update_velocities(self, updated_vel_x, updated_vel_y):
+    def update_velocities(self, updated_vel_x: Union[float, int], updated_vel_y: Union[float, int]):
         self.si_point_data['velocities'] = np.array([updated_vel_x, updated_vel_y])
         self.vel_x, self.vel_y = self.meters_to_pixels(mode = 'vel')
         self.point_data['velocities'] = np.array([self.vel_x, self.vel_y])
 
     
-    def get_data(self): return self.point_data
+    def get_data(self) -> dict: return self.point_data
 
 
-    def set_mass(self, mass):
+    def set_mass(self, mass: Union[float, int]):
         if mass > 0:
             self.mass = mass
             self.point_data['mass'] = self.mass
@@ -84,7 +86,7 @@ class MassPoint(Point):
             raise ValueError('Mass value of the point must be a positive real number!')
         
 
-    def meters_to_pixels(self, mode = 'coord'):
+    def meters_to_pixels(self, mode: str = 'coord') -> np.ndarray:
         if mode == 'coord':
             pix_coords = self.si_point_data['coordinates'] * self.scale
             pix_coords += self.displace_vector
@@ -93,9 +95,9 @@ class MassPoint(Point):
         return pix_coords
         
     
-    def set_convert_data(self, scale, displace_vector):
+    def set_convert_data(self, scale: Union[float, int], displace_vector: np.ndarray):
         self.scale = scale
-        self.displace_vector = displace_vector
+        self.displace_vector = displace_vector if isinstance(displace_vector, np.ndarray) else np.array(displace_vector)
         if list(self.si_point_data.values()) == [None, None]:
             self.si_point_data['coordinates'] = (self.point_data['coordinates'] - self.displace_vector) / self.scale
             self.si_point_data['velocities'] = self.point_data['velocities'] / self.scale       
@@ -106,7 +108,7 @@ class FixedPoint(Point):
     '''
         Class for fixed points on the edges! 
     '''
-    def __init__(self, x_coord, y_coord, radius, point_color = 'black'):
+    def __init__(self, x_coord: Union[float, int], y_coord: Union[float, int], radius: Union[float, int], point_color = 'black'):
         self.radius = radius
         self.point_color = point_color
         self.__velocities = np.array([0, 0])
@@ -118,7 +120,7 @@ class FixedPoint(Point):
         self.si_point_data = {'coordinates': None, 'velocities': self.__velocities}
 
 
-    def set_convert_data(self, scale, displace_vector):
+    def set_convert_data(self, scale: Union[float, int], displace_vector: np.ndarray):
         self.scale, self.displace_vector = scale, displace_vector
         if self.si_point_data['coordinates'] is None:
             self.si_point_data['coordinates'] = (self.point_data['coordinates'] - self.displace_vector) / self.scale

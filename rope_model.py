@@ -3,7 +3,7 @@ import numpy as np
 from points_classes import MassPoint, FixedPoint
 from scipy.integrate import solve_ivp
 from math import sqrt
-
+from typing import Union
 
 
 DEFAULT_REAL_METER_DIST = 100
@@ -16,8 +16,10 @@ class RopeFragment:
     '''
     Class for rope fragment between two neighboring points!  
     '''
-    def __init__(self, start_point, end_point, rest_len, stiffness, viscosity):
-        self.rest_len = rest_len #in pixels, must be in meters
+    def __init__(self, start_point: Union[MassPoint, FixedPoint], 
+                    end_point: Union[MassPoint, FixedPoint], 
+                    rest_len: Union[float, int], stiffness: Union[float, int], viscosity: Union[float, int]):
+        self.rest_len = rest_len 
         self.stiffness = stiffness
         self.viscosity = viscosity
         self.start_point, self.end_point = start_point, end_point
@@ -29,7 +31,7 @@ class RopeFragment:
         self.force_vals = []
 
 
-    def draw_fragment(self):
+    def draw_fragment(self) -> None:
         '''
         Method for drawing rope fragment with using Pygame
         '''
@@ -37,7 +39,7 @@ class RopeFragment:
         pg.draw.line(self.surface, self.color, left_point_coords, right_point_coords, self.width)
 
     
-    def get_points_coords(self, mode = 'si'):
+    def get_points_coords(self, mode: str = 'si') -> tuple:
         '''
         Method returns endpoints coordinates of this RopeFragment at this moment of time
         depending on the selected mode: 
@@ -53,7 +55,7 @@ class RopeFragment:
         return (left_coords, right_coords)
     
 
-    def get_points_vels(self):
+    def get_points_vels(self) -> tuple:
         '''
         Method returns endpoints velocities in SI system (meters per second)
         '''
@@ -62,7 +64,7 @@ class RopeFragment:
         return (left_vels, right_vels)
 
 
-    def vector_coords(self, opposite_vector = False):
+    def vector_coords(self, opposite_vector: bool = False) -> np.ndarray:
         '''
         Coordinates of the RopeFragment vector
         '''
@@ -74,7 +76,7 @@ class RopeFragment:
         return np.array(vector_coords)
 
 
-    def vel_vector_coords(self, opposite_vector = False):
+    def vel_vector_coords(self, opposite_vector: bool = False) -> np.ndarray:
         '''
         Velocities of the RopeFragment vector
         '''
@@ -97,10 +99,10 @@ class RopeFragment:
         return dist
 
 
-    def force(self, main_point = 'left'):
+    def force(self, main_point: str = 'left') -> np.ndarray:
         '''
         Tension force in the RopeFragment at this moment of time derived using 
-        Hooke's law and Newton's law of viscous friction (this force is used as force is used 
+        Hooke's law and Newton's law of viscous friction (this force is used 
         as a component of the right part of the system of ODEs in RopeModel class)
         '''
         if main_point == 'left':
@@ -164,7 +166,7 @@ class RopeModel:
             self.objects['fixed_points'].append(fixed_point)
 
     
-    def create_free_end_rope(self, attach_point_id, points_velocities = None):
+    def create_free_end_rope(self, attach_point_id: int, points_velocities = None):
         self.attach_point_id = attach_point_id
         top_point = self.objects['moving_points'][self.attach_point_id]
         points_num = self.ver_rope_point_num
@@ -174,8 +176,8 @@ class RopeModel:
         end_coord = start_coord + self.ver_rope_rest_len * self.pix_per_metr
         vertical_coords = np.linspace(start_coord, end_coord, points_num + 1)[1:]
         vertical_coords = [(x_coord, y_coord) for y_coord in vertical_coords]
-        stiffness = self.get_rope_fragment_property(self.ver_rope_stiffness, points_num)
-        viscosity = self.get_rope_fragment_property(self.ver_rope_viscosity, points_num)
+        stiffness = self.ver_rope_stiffness        
+        viscosity = self.ver_rope_viscosity        
         mass = self.get_moving_point_mass(rope_type = 'ver')
         radius = self.ver_rope_point_radius
         if points_velocities is None:
@@ -206,24 +208,24 @@ class RopeModel:
             rest_len = self.get_rope_fragment_rest_len()
 
         if stiffness is None:
-            stiffness = self.get_rope_fragment_property(self.hor_rope_stiffness, 
-                                                        self.hor_moving_point_data['moving_points_num'])
+            stiffness = self.hor_rope_stiffness       
+                                                        
 
         if viscosity is None:
-            viscosity = self.get_rope_fragment_property(self.hor_rope_viscosity, 
-                                                        self.hor_moving_point_data['moving_points_num'])
+            viscosity = self.hor_rope_viscosity          
+                                                        
 
         rope_fragment = RopeFragment(left_endpoint, right_endpoint, rest_len, stiffness, viscosity)
         rope_fragment.surface = self.surface
         self.objects['rope_fragments'].append(rope_fragment)
 
         
-    def get_linear_vels_distribution(self, point_num, start_vel, end_vel):
+    def get_linear_vels_distribution(self, point_num: int, start_vel: float, end_vel: float) -> np.ndarray:
         vels = np.linspace(start_vel, end_vel, point_num)
         return vels
 
 
-    def create_moving_point(self, id, mass, radius, coords, velocities):
+    def create_moving_point(self, id: int, mass: float, radius: float, coords, velocities) -> None:
         moving_point = MassPoint(id, mass, radius, (coords[0], coords[1]), 
                                 (velocities[0], velocities[1]))
         moving_point.set_surface(self.surface)
@@ -277,9 +279,9 @@ class RopeModel:
 
     def set_moving_point_mass(self, rope_mass: float, moving_points_num: int, rope_type = 'hor'):
         if rope_type == 'hor':
-            self.hor_moving_point_mass = rope_mass / (moving_points_num) #без +1
+            self.hor_moving_point_mass = rope_mass / (moving_points_num) 
         elif rope_type == 'ver':
-            self.ver_moving_point_mass = rope_mass / (moving_points_num - 1) #-1
+            self.ver_moving_point_mass = rope_mass / (moving_points_num - 1) 
         
     
     def get_moving_point_mass(self, rope_type = 'hor'):
@@ -326,16 +328,6 @@ class RopeModel:
             ver_fragment_rest_len = self.ver_rope_rest_len / rope_fragments_num
             return ver_fragment_rest_len
         
-
-    def get_rope_fragment_property(self, property_value: float, points_num: int) -> float:
-        '''
-        Function returns values of stiffness or viscosity of the rope fragment by 
-        by the corresponding values of stiffness or viscosity of the whole rope 
-        (it does`t matter horizontal or vertical).
-        property_value is a value of stiffness or viscosity of the whole rope. 
-        '''
-        return property_value #* (points_num + 1) #поделить на длину верёвки
-    
 
     def set_ver_rope_data(self, ver_rope_data):
         self.ver_rope_rest_len = ver_rope_data['rest_len'] / self.pix_per_metr
