@@ -330,7 +330,7 @@ class RopeModel:
         
 
     def set_ver_rope_data(self, ver_rope_data):
-        self.ver_rope_rest_len = ver_rope_data['rest_len'] / self.pix_per_metr
+        self.ver_rope_rest_len = ver_rope_data['rest_len'] #/ self.pix_per_metr
         self.ver_rope_mass = ver_rope_data['rope_mass']
         self.ver_rope_stiffness = ver_rope_data['rope_stiffness']
         self.ver_rope_viscosity = ver_rope_data['rope_viscosity']
