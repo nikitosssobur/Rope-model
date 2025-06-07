@@ -65,7 +65,7 @@ def get_info(valid_args, rope):
     
     ropes_table.add_column(fieldname="Vertical", column=[valid_args['point_num'], valid_args['ver_rope_mass'], 0, 
                                valid_args['ver_rope_stiffness'], valid_args['ver_rope_viscosity'], 
-                               valid_args['rest_len'], valid_args['rest_len']/rope.pix_per_metr, 
+                               valid_args['rest_len']*rope.pix_per_metr, valid_args['rest_len'], 
                                valid_args['ver_rope_point_radius'], valid_args['ver_rope_mass']/valid_args['point_num'], 
                                valid_args['attach_point_id']])
         
@@ -138,7 +138,7 @@ def unpack_model_config(config):
     return hor_rope_data, ver_rope_data, surface_data, additional_info
 
 
-def draw_force_graph(force_vals, y_label='F(t)', x_label='t', time_steps=None):
+def draw_force_graph(force_vals, time_steps=None, y_label='F(t)', x_label='t'):
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     if time_steps is None:
