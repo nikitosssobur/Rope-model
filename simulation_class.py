@@ -48,6 +48,7 @@ class Simulation:
 
         
         for i in self.rope_indexes:
-            draw_force_graph(self.rope.objects['rope_fragments'][i].force_vals)
+            force_values = self.rope.objects['rope_fragments'][i].force_vals            
+            draw_force_graph(force_values, np.linspace(0, duration, len(force_values)))
         draw_force_graph(self.speed_vals, time_steps = sol.t, y_label = 'vel(t)')
         draw_force_graph(self.coord_vals, time_steps = sol.t, y_label = 'y_coord(t)') 
