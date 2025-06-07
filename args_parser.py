@@ -1,9 +1,9 @@
 import argparse as ap
 import json 
+from model_config_creator import DEFAULT_CONFIG_PATH
 
 
-
-with open(r"./default_model_config.json", "r") as f:
+with open(DEFAULT_CONFIG_PATH, "r") as f:
     default_config = json.load(f)
 
 
@@ -48,7 +48,7 @@ parser.add_argument('-hrv', '--hor_rope_viscosity', type=float, default=default_
                     help="viscosity coefficient of the horizontal rope")
 
 parser.add_argument('-vrrl', '--ver_rope_rest_len', type=float, default=default_config['rest_len'],
-                    help="vertical rope rest length (in pixels)")
+                    help="vertical rope rest length (in meters)")
 
 parser.add_argument('-vrpn', '--ver_rope_points_num', type=int, default=default_config['point_num'],
                     help="vertical rope points number (attachment point excluded, weighted point included)")
