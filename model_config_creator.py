@@ -10,7 +10,7 @@ YOU CAN USE IT AS AN EXAMPLE OF MODEL SETUP.
 
 
 
-DEFAULT_CONFIG_PATH = "./default_model_config.json" 
+DEFAULT_CONFIG_PATH = r"./default_model_config.json" 
 
 
 default_model_parameters = {'x_coords': [100, 750], 
@@ -23,7 +23,7 @@ default_model_parameters = {'x_coords': [100, 750],
                             'tension_force': 800,
                             'stiffness': 3000,
                             'viscosity': 2000, 
-                            'rest_len': 150, 
+                            'rest_len': 25, 
                             'point_num': 3, 
                             'weighted_point_mass': 90, 
                             'weighted_point_radius': 8,
