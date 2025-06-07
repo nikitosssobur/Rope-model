@@ -18,7 +18,7 @@
     "tension_force": 800,
     "stiffness": 3000,
     "viscosity": 2000,
-    "rest_len": 150,
+    "rest_len": 25,
     "point_num": 3,
     "weighted_point_mass": 90,
     "weighted_point_radius": 8,
