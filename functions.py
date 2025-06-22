@@ -79,12 +79,13 @@ def get_info(valid_args, rope):
     experiment_table = PrettyTable()
     experiment_table.title = 'Experiment data'
     experiment_table.add_column(fieldname="Info", column=["Distance between fixed points (in meters)",
-                                "Weighted point fall height (in meters)", "Pixels per meter coefficient", 
+                                "Weighted point fall height (in meters)", "Weighted point mass (in kg)",
+                                "Pixels per meter coefficient", 
                                 "Experiment duration (in seconds)", "Time steps per second",
                                 "ODE Solver method", "Rope fragments indexes (for force graph)"])
     
     experiment_table.add_column(fieldname="Values", column=[valid_args['real_meter_dist'], 
-                                valid_args['fall_height'], rope.pix_per_metr, valid_args['sec_num'], 
+                                valid_args['fall_height'], valid_args["weighted_point_mass"], rope.pix_per_metr, valid_args['sec_num'], 
                                 valid_args['time_steps_per_sec'], valid_args['solver_method'], 
                                 [valid_args['rope_fragments_indexes'] if valid_args['rope_fragments_indexes'] is not None 
                                  else valid_args['moving_points_num']]])
