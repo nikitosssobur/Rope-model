@@ -22,19 +22,19 @@ parser.add_argument('-fpr', '--fixed_point_radius', type=float,
                     default=default_config['radius'], 
                     help="radius of the fixed edge points (in pixels)")
 
-parser.add_argument('-hrmpn', '--hor_rope_moving_points_num', type=int, 
+parser.add_argument('-hrpn', '--hor_rope_points_num', type=int, 
                     default=default_config['moving_points_num'],
                     help="horizontal rope moving points number (integer, including ropes attachment point)")
 
-parser.add_argument('-hrmpr', '--hor_rope_moving_points_radius', type=float,
+parser.add_argument('-hrpr', '--hor_rope_points_radius', type=float,
                     default=default_config['moving_points_radius'],
                     help="horizontal rope moving points radius (in pixels)")
 
-parser.add_argument('-hrm', '--hor_rope_mass', type=float,
-                    default=default_config['rope_mass'], 
-                    help="total mass of the whole horizontal rope (in kg, mass of all points of the rope)")
+parser.add_argument('-hrd', '--hor_rope_density', type=float,
+                    default=default_config['rope_density'],
+                    help="linear density of the horizontal rope (kg/meter)")
 
-parser.add_argument('-hrmpv', '--hor_rope_moving_points_velocities', type=float, nargs='+', 
+parser.add_argument('-hrpv', '--hor_rope_points_velocities', type=float, nargs='+', 
                     default=default_config['moving_points_velocities'], 
                     help="initial velocity vector of all points of the horizontal rope (default: [0, 0], m/sec)")
 
@@ -62,9 +62,9 @@ parser.add_argument('-wpr', '--weighted_point_radius', type=float, default=defau
 parser.add_argument('-vrpr', '--ver_rope_point_radius', type=float, default=default_config['ver_rope_point_radius'],
                     help="vertical rope point radius (in pixels)")
 
-parser.add_argument('-vrm', '--ver_rope_mass', type=float,
-                    default=default_config['ver_rope_mass'], 
-                    help="total mass of the whole vertical rope (in kg, mass of all points of the rope)")
+parser.add_argument('-vrd', '--ver_rope_density', type=float,
+                    default=default_config['ver_rope_density'],
+                    help="linear density of the vertical rope (kg/meter)")
 
 parser.add_argument('-vrs', '--ver_rope_stiffness', type=float, default=default_config['ver_rope_stiffness'],
                     help="stiffness coefficient of the vertical rope")
@@ -106,4 +106,6 @@ parser.add_argument('-sm', '--solver_method', type=str, default=default_config['
 
 parser.add_argument('-rfi', '--rope_fragments_indexes', type=int, nargs='+', 
                     default=default_config['rope_fragments_indexes'], 
-                    help="list of indexes of the ropes for which forces graphs will be builded (by default only for right edge rope fragment connected between last horizonal rope moving point and right fixed point graph is builded)")
+                    help='''list of indexes of the ropes for which forces graphs will be built (by default only for right edge rope fragment
+                         connected between last horizonal rope moving point and right fixed point graph is built, 
+                         indexes account from 0)''')

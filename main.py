@@ -16,9 +16,9 @@ if __name__=='__main__':
     
     hor_rope_data, ver_rope_data, surface_data, additional_info = unpack_model_config(valid_args) 
 
-    pg.init()
+    
     surface = pg.display.set_mode((surface_data['width'],  surface_data['height']))
-
+    pg.display.set_caption('Rope jumping modelling')
     rope = RopeModel(surface, hor_rope_data=hor_rope_data, real_meter_dist=additional_info['real_meter_dist'], 
                     fall_height=additional_info['fall_height'])
     rope.set_ver_rope_data(ver_rope_data)
@@ -36,11 +36,11 @@ if __name__=='__main__':
         print(window_table)
         print(experiment_table)
 
-    sim_instance = Simulation(rope=rope, surface=surface, surface_fill_color=surface_data['color'], 
+    simulation = Simulation(rope=rope, surface=surface, surface_fill_color=surface_data['color'],
                               rope_indexes=additional_info['rope_fragments_indexes'])
     time_data = find_time_steps(sec_num=additional_info['sec_num'], 
                             time_steps_per_second=additional_info['time_steps_per_sec'])
-    sim_instance.time_step_simulation(initial_cond=initial_cond, duration=additional_info['sec_num'], 
+    simulation.time_step_simulation(initial_cond=initial_cond, duration=additional_info['sec_num'],
                     time_steps_num=time_data['general_time_steps'], delay=time_data['delay'], 
                     method=additional_info['method'])
     

@@ -140,15 +140,16 @@ class RopeModel:
     def __init__(self, surface, hor_rope_data, real_meter_dist=None, fall_height=None):
         self.surface = surface
         self.fixed_point_data = hor_rope_data['fixed_point_data']
-        self.hor_moving_point_data = hor_rope_data['moving_point_data'] 
-        self.hor_rope_mass = hor_rope_data['rope_mass']
+        self.hor_moving_point_data = hor_rope_data['moving_point_data']
         self.hor_rope_stiffness = hor_rope_data['rope_stiffness']
         self.hor_rope_viscosity = hor_rope_data['rope_viscosity']
+        self.hor_rope_density = hor_rope_data['rope_density']
         self.hor_rope_tension = hor_rope_data['tension_force']
         self.fall_height = fall_height if fall_height is not None and fall_height >= 0 else DEFAULT_FALL_HEIGHT
-        self.real_meter_dist = real_meter_dist if real_meter_dist is not None and real_meter_dist >= 0 else DEFAULT_REAL_METER_DIST
+        self.real_meter_dist = real_meter_dist if real_meter_dist and real_meter_dist >= 0 else DEFAULT_REAL_METER_DIST
         self.set_convert_coeff(real_meter_dist=self.real_meter_dist)
         self.set_hor_rest_len()
+        self.hor_rope_mass = self.hor_rope_density * self.hor_rest_len
         self.objects = {'fixed_points': [], 
                         'rope_fragments':[],
                         'moving_points':[],
@@ -166,6 +167,32 @@ class RopeModel:
             self.objects['fixed_points'].append(fixed_point)
 
     
+    def create_moving_point(self, id: int, mass: float, radius: float, coords, velocities):
+        moving_point = MassPoint(id, mass, radius, (coords[0], coords[1]), 
+                                (velocities[0], velocities[1]))
+        moving_point.set_surface(self.surface)
+        moving_point.set_convert_data(scale = self.pix_per_metr, 
+                                      displace_vector = self.objects['fixed_points'][0].point_data['coordinates'])
+        self.objects['moving_points'].append(moving_point)
+
+    
+    def create_rope_fragment(self, left_endpoint, right_endpoint, stiffness = None, viscosity = None, rest_len = None):
+        if rest_len is None:
+            rest_len = self.get_rope_fragment_rest_len()
+
+        if stiffness is None:
+            stiffness = self.hor_rope_stiffness / self.hor_rest_len       
+            stiffness *= (rest_len * (self.hor_moving_point_data['moving_points_num'] + 1))                                             
+
+        if viscosity is None:
+            viscosity = self.hor_rope_viscosity / self.hor_rest_len    
+            viscosity *= (rest_len * (self.hor_moving_point_data['moving_points_num'] + 1))         
+                                                        
+        rope_fragment = RopeFragment(left_endpoint, right_endpoint, rest_len, stiffness, viscosity)
+        rope_fragment.surface = self.surface
+        self.objects['rope_fragments'].append(rope_fragment)
+
+
     def create_free_end_rope(self, attach_point_id: int, points_velocities = None):
         self.attach_point_id = attach_point_id
         top_point = self.objects['moving_points'][self.attach_point_id]
@@ -175,9 +202,9 @@ class RopeModel:
         start_coord = top_point.point_data['coordinates'][1]
         end_coord = start_coord + self.ver_rope_rest_len * self.pix_per_metr
         vertical_coords = np.linspace(start_coord, end_coord, points_num + 1)[1:]
-        vertical_coords = [(x_coord, y_coord) for y_coord in vertical_coords]
-        stiffness = self.ver_rope_stiffness        
-        viscosity = self.ver_rope_viscosity        
+        rope_coords = [(x_coord, y_coord) for y_coord in vertical_coords]
+        stiffness = (self.ver_rope_stiffness / self.ver_rope_rest_len) * fragment_rest_len * points_num       
+        viscosity = (self.ver_rope_viscosity / self.ver_rope_rest_len) * fragment_rest_len * points_num       
         mass = self.get_moving_point_mass(rope_type = 'ver')
         radius = self.ver_rope_point_radius
         if points_velocities is None:
@@ -194,7 +221,7 @@ class RopeModel:
             
             self.create_moving_point(id = len(self.objects['moving_points']), 
                                     mass = mass, radius = radius, 
-                                    coords = vertical_coords[i], 
+                                    coords = rope_coords[i], 
                                     velocities = points_velocities[i])
             bottom_point = self.objects['moving_points'][-1]
             self.create_rope_fragment(top_point, bottom_point, stiffness, viscosity, fragment_rest_len)
@@ -203,36 +230,10 @@ class RopeModel:
         self.general_points_num = len(self.objects['moving_points'])
     
 
-    def create_rope_fragment(self, left_endpoint, right_endpoint, stiffness = None, viscosity = None, rest_len = None):
-        if rest_len is None:
-            rest_len = self.get_rope_fragment_rest_len()
-
-        if stiffness is None:
-            stiffness = self.hor_rope_stiffness       
-                                                        
-
-        if viscosity is None:
-            viscosity = self.hor_rope_viscosity          
-                                                        
-
-        rope_fragment = RopeFragment(left_endpoint, right_endpoint, rest_len, stiffness, viscosity)
-        rope_fragment.surface = self.surface
-        self.objects['rope_fragments'].append(rope_fragment)
-
-        
     def get_linear_vels_distribution(self, point_num: int, start_vel: float, end_vel: float) -> np.ndarray:
         vels = np.linspace(start_vel, end_vel, point_num)
         return vels
 
-
-    def create_moving_point(self, id: int, mass: float, radius: float, coords, velocities) -> None:
-        moving_point = MassPoint(id, mass, radius, (coords[0], coords[1]), 
-                                (velocities[0], velocities[1]))
-        moving_point.set_surface(self.surface)
-        moving_point.set_convert_data(scale = self.pix_per_metr, 
-                                      displace_vector = self.objects['fixed_points'][0].point_data['coordinates'])
-        self.objects['moving_points'].append(moving_point)
-        
 
     def create_model(self):
         self.create_fixed_points()
@@ -303,6 +304,7 @@ class RopeModel:
     def set_hor_rest_len(self):
         stretch_rope_len = self.get_fixed_points_distanse() / self.pix_per_metr
         hor_rest_len = stretch_rope_len / (self.hor_rope_tension / self.hor_rope_stiffness + 1)
+        #hor_rest_len = stretch_rope_len - self.hor_rope_tension / self.hor_rope_stiffness
         if hor_rest_len > 0:
             self.hor_rest_len = hor_rest_len
         else:
@@ -331,7 +333,8 @@ class RopeModel:
 
     def set_ver_rope_data(self, ver_rope_data):
         self.ver_rope_rest_len = ver_rope_data['rest_len'] #/ self.pix_per_metr
-        self.ver_rope_mass = ver_rope_data['rope_mass']
+        self.ver_rope_density = ver_rope_data['rope_density']
+        self.ver_rope_mass = self.ver_rope_density * self.ver_rope_rest_len
         self.ver_rope_stiffness = ver_rope_data['rope_stiffness']
         self.ver_rope_viscosity = ver_rope_data['rope_viscosity']
         self.ver_rope_point_num = ver_rope_data['point_num'] 
@@ -360,9 +363,9 @@ class RopeModel:
         A method for solving the system of differential equations. 
         This function is passed as an argument into solve_ivp from Scipy. 
         '''
-        if self.first_num_step:
-            self.first_num_step = False
-            return self.init_right_parts
+        #if self.first_num_step:
+        #    self.first_num_step = False
+        #    return self.init_right_parts
         
 
         self.update_system_state(data_list)
@@ -480,7 +483,7 @@ class RopeModel:
             point.update_velocities(new_point_state[1], new_point_state[3])
 
 
-    def solve_ivp(self, initial_cond, duration = 1, start_time = 0, fps = 60, method = 'RK45'): #RK45 
+    def solve_ivp(self, initial_cond, duration=1, start_time=0, fps=60, method='RK45'): #RK45
         '''
         Method for solving a system of differential equations using 
         a numerical method at each step of the game cycle  
@@ -489,8 +492,8 @@ class RopeModel:
         duration = duration # 1 sec
         t_span = (start_time, start_time + duration) #(0, 1)
         self.t_eval = np.linspace(t_span[0], t_span[1], fps) #(0, 0.1, 0.2, 1) 
-        solution = solve_ivp(self.system, method = method, t_span = t_span, y0 = initial_cond, 
-                             t_eval = self.t_eval)
+        solution = solve_ivp(self.system, method=method, t_span=t_span, y0=initial_cond,
+                             t_eval=self.t_eval)
         return solution
 
 

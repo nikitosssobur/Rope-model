@@ -8,10 +8,10 @@ def create_model_config(config_data):
     output_config = dict()
     output_config['x_coords'], output_config['y_coords'] = config_data['x_coords'], config_data['y_coords']
     output_config['radius'] = config_data['fixed_point_radius']
-    output_config['moving_points_num'] = config_data['hor_rope_moving_points_num']
-    output_config['moving_points_radius'] = config_data['hor_rope_moving_points_radius']
-    output_config['moving_points_velocities'] = config_data['hor_rope_moving_points_velocities']
-    output_config['rope_mass'] = config_data['hor_rope_mass']
+    output_config['moving_points_num'] = config_data['hor_rope_points_num']
+    output_config['moving_points_radius'] = config_data['hor_rope_points_radius']
+    output_config['moving_points_velocities'] = config_data['hor_rope_points_velocities']
+    output_config['rope_density'] = config_data['hor_rope_density']
     output_config['tension_force'] = config_data['tension_force']
     output_config['stiffness'] = config_data['hor_rope_stiffness']
     output_config['viscosity'] = config_data['hor_rope_viscosity']
@@ -20,7 +20,7 @@ def create_model_config(config_data):
     output_config['weighted_point_mass'] = config_data['weighted_point_mass']
     output_config['weighted_point_radius'] = config_data['weighted_point_radius']
     output_config['ver_rope_point_radius'] = config_data['ver_rope_point_radius']
-    output_config['ver_rope_mass'] = config_data['ver_rope_mass']
+    output_config['ver_rope_density'] = config_data['ver_rope_density']
     output_config['ver_rope_stiffness'] = config_data['ver_rope_stiffness']
     output_config['ver_rope_viscosity'] = config_data['ver_rope_viscosity']
     output_config['attach_point_id'] = config_data['attach_point_id']
@@ -53,20 +53,20 @@ def get_info(valid_args, rope):
         
     ropes_table = PrettyTable()
     ropes_table.title = 'Ropes data'
-    ropes_table.add_column(fieldname="Info", column=["points number", "rope mass (in kg)", "tension force (Newtons)", 
-                                "stiffness (Newtons)", "viscosity (Newtons forces)", "rest lenght (in pixels)", "rest lenght (in meters)", 
+    ropes_table.add_column(fieldname="Info", column=["points number", "rope_density (kg/m)", "rope mass (in kg)", "tension force (Newtons)",
+                                "stiffness (Newtons)", "viscosity (Newtons * sec)", "rest lenght (in pixels)", "rest lenght (in meters)", 
                                 "moving point radius (in pixels)", "moving point mass (in kg)", "attachment point index"])
     
-    ropes_table.add_column(fieldname="Horizontal", column=[valid_args['moving_points_num'], valid_args['rope_mass'], 
+    ropes_table.add_column(fieldname="Horizontal", column=[valid_args['moving_points_num'], valid_args['rope_density'], round(rope.hor_rope_mass, 4),
                                valid_args['tension_force'], valid_args['stiffness'], valid_args['viscosity'], 
-                               rope.hor_rest_len*rope.pix_per_metr, rope.hor_rest_len, 
-                               valid_args['moving_points_radius'], valid_args['rope_mass']/valid_args['moving_points_num'], 
+                               round(rope.hor_rest_len*rope.pix_per_metr, 4), round(rope.hor_rest_len, 4),
+                               valid_args['moving_points_radius'], round(rope.hor_rope_mass/valid_args['moving_points_num'], 5),
                                valid_args['attach_point_id']]) 
     
-    ropes_table.add_column(fieldname="Vertical", column=[valid_args['point_num'], valid_args['ver_rope_mass'], 0, 
+    ropes_table.add_column(fieldname="Vertical", column=[valid_args['point_num'], valid_args['ver_rope_density'], round(rope.ver_rope_mass, 4), 0.0,
                                valid_args['ver_rope_stiffness'], valid_args['ver_rope_viscosity'], 
-                               valid_args['rest_len']*rope.pix_per_metr, valid_args['rest_len'], 
-                               valid_args['ver_rope_point_radius'], valid_args['ver_rope_mass']/valid_args['point_num'], 
+                               round(valid_args['rest_len']*rope.pix_per_metr, 4), round(valid_args['rest_len'], 4),
+                               valid_args['ver_rope_point_radius'], round(rope.ver_rope_mass/valid_args['point_num'], 5),
                                valid_args['attach_point_id']])
         
 
@@ -94,7 +94,7 @@ def get_info(valid_args, rope):
 
 
 def unpack_model_config(config):
-    if isinstance(config, str) and config[-5:] == '.json':
+    if isinstance(config, str) and config.endswith('.json'):
         with open(config, 'r') as f:
             loaded_config = json.load(f)
     elif isinstance(config, dict):
@@ -110,7 +110,7 @@ def unpack_model_config(config):
                          'moving_points_velocities': loaded_config['moving_points_velocities']}
     
     hor_rope_data = {'fixed_point_data': fixed_point_data, 'moving_point_data': moving_point_data,
-                    'rope_mass': loaded_config['rope_mass'], 'rope_stiffness': loaded_config['stiffness'], 
+                    'rope_density': loaded_config['rope_density'], 'rope_stiffness': loaded_config['stiffness'],
                     'rope_viscosity': loaded_config['viscosity'], 
                     'tension_force': loaded_config['tension_force']}
     
@@ -119,7 +119,7 @@ def unpack_model_config(config):
                 'weighted_point_mass': loaded_config['weighted_point_mass'], 
                 'weighted_point_radius': loaded_config['weighted_point_radius'],
                 'ver_rope_point_radius': loaded_config['ver_rope_point_radius'],
-                'rope_mass': loaded_config['ver_rope_mass'],
+                'rope_density': loaded_config['ver_rope_density'],
                 'rope_stiffness': loaded_config['ver_rope_stiffness'],
                 'rope_viscosity': loaded_config['ver_rope_viscosity']}
     
@@ -139,13 +139,15 @@ def unpack_model_config(config):
     return hor_rope_data, ver_rope_data, surface_data, additional_info
 
 
-def draw_force_graph(force_vals, time_steps=None, y_label='F(t)', x_label='t'):
+def draw_force_graph(force_vals, time_steps=None, y_label='F(t)', x_label='t', title=''):
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     if time_steps is None:
         plt.plot(force_vals)
     else:
         plt.plot(time_steps, force_vals)
+    plt.title(title)
+    plt.grid()
     plt.show()
 
 

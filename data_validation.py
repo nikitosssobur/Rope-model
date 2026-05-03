@@ -10,7 +10,7 @@ class ArgsValidator(BaseModel):
     moving_points_num: int
     moving_points_radius: float
     moving_points_velocities: list[Union[float, int]] 
-    rope_mass: float
+    rope_density: float
     tension_force: float
     stiffness: float
     viscosity: float
@@ -19,7 +19,7 @@ class ArgsValidator(BaseModel):
     weighted_point_mass: float 
     weighted_point_radius: float
     ver_rope_point_radius: float
-    ver_rope_mass: float
+    ver_rope_density: float
     ver_rope_stiffness: float
     ver_rope_viscosity: float
     attach_point_id: Union[int, None]
@@ -83,10 +83,10 @@ class ArgsValidator(BaseModel):
         return value
 
 
-    @field_validator('rope_mass', 'ver_rope_mass', 'stiffness', 'viscosity', 'ver_rope_stiffness', 'ver_rope_viscosity')
+    @field_validator('rope_density', 'ver_rope_density', 'stiffness', 'viscosity', 'ver_rope_stiffness', 'ver_rope_viscosity')
     def check_rope_characteristic(cls, value):
         if value <= 0:
-            raise ValueError('Ropes characteristics (mass, stiffness, viscosity) must be positive floats!')
+            raise ValueError('Ropes characteristics (density, stiffness, viscosity) must be positive floats!')
         return value 
     
 
@@ -158,10 +158,12 @@ class ArgsValidator(BaseModel):
             if not all_ints:
                 raise ValueError('List of rope fragments indexes must contain only integers!')
             
-            bounds_check = all([-self.moving_points_num <= indx_val < self.moving_points_num for indx_val in self.rope_fragments_indexes])
+            bounds_check = all([(-self.moving_points_num - self.point_num + 1) <= indx_val <= (self.moving_points_num + self.point_num) for indx_val in self.rope_fragments_indexes])
             
             if not bounds_check:
-                raise ValueError('All indexes in the rope fragments indexes list must be integers in segment [-hor_points_num, hor_points_num-1]')
+                raise ValueError(f'''All indexes in the rope fragments indexes list must be integers in segment [-general_system_point_num, general_system_point_num-1].
+                Given indexes: {self.rope_fragments_indexes}.
+                Acceptable bounds: {[-self.moving_points_num - self.point_num + 1, self.moving_points_num + self.point_num]}''')
        
         return self     
         
