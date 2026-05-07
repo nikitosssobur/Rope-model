@@ -63,22 +63,10 @@ class MassPoint(Point):
         self.si_point_data = {'coordinates': None, 'velocities': None}
 
 
-    def update_coords2(self, updated_x: Union[float, int], updated_y: Union[float, int]):
-        self.si_point_data['coordinates'] = np.array([updated_x, updated_y])
-        self.x, self.y = self.meters_to_pixels()
-        self.point_data['coordinates'] = np.array([self.x, self.y])
-
-
     def update_coords(self, updated_coords: np.ndarray):
         self.si_point_data['coordinates'] = updated_coords
         self.point_data['coordinates'] = self.meters_to_pixels()
         self.x, self.y = self.point_data['coordinates']
-
-
-    def update_velocities2(self, updated_vel_x: Union[float, int], updated_vel_y: Union[float, int]):
-        self.si_point_data['velocities'] = np.array([updated_vel_x, updated_vel_y])
-        self.vel_x, self.vel_y = self.meters_to_pixels(mode = 'vel')
-        self.point_data['velocities'] = np.array([self.vel_x, self.vel_y])
 
 
     def update_velocities(self, updated_vels: np.ndarray):

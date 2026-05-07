@@ -26,7 +26,7 @@ class RopeFragment:
         self.surface = None
         self.color = 'black'
         self.width = 1
-        self.max_len = rest_len * 50
+        self.max_len = rest_len * 20
         self.store_force_vals = False
         self.force_vals = []
 
@@ -64,18 +64,6 @@ class RopeFragment:
         return (left_vels, right_vels)
 
 
-    def vector_coords2(self, opposite_vector: bool = False) -> np.ndarray:
-        '''
-        Coordinates of the RopeFragment vector
-        '''
-        left_coords, right_coords = self.get_points_coords()
-        if opposite_vector:
-            vector_coords = [left_coords[0] - right_coords[0], left_coords[1] - right_coords[1]]
-        else:
-            vector_coords = [right_coords[0] - left_coords[0], right_coords[1] - left_coords[1]]
-        return np.array(vector_coords)
-
-
     def vector_coords(self, opposite_vector: bool = False) -> np.ndarray:
         '''
         Coordinates of the RopeFragment vector
@@ -86,18 +74,6 @@ class RopeFragment:
         else:
             vector_coords = right_coords - left_coords
         return vector_coords
-
-
-    def vel_vector_coords2(self, opposite_vector: bool = False) -> np.ndarray:
-        '''
-        Velocities of the RopeFragment vector
-        '''
-        left_vels, right_vels = self.get_points_vels()
-        if opposite_vector:
-            vector_vels = [left_vels[0] - right_vels[0], left_vels[1] - right_vels[1]]
-        else:
-            vector_vels = [right_vels[0] - left_vels[0], right_vels[1] - left_vels[1]]
-        return vector_vels
 
 
     def vel_vector_coords(self, opposite_vector: bool = False) -> np.ndarray:
@@ -112,17 +88,6 @@ class RopeFragment:
         return vector_vels
 
 
-    def rope_fragment_len2(self):
-        '''
-        RopeFragment length at this moment in time
-        '''
-        vector_coords = self.vector_coords2()
-        dist = np.linalg.norm(vector_coords)
-        if dist >= self.max_len:
-            raise ValueError("Rope lenght can't be greater than maximum length!")
-        return dist
-
-
     def rope_fragment_len(self):
         '''
         RopeFragment length at this moment in time
@@ -132,38 +97,6 @@ class RopeFragment:
         if dist >= self.max_len:
             raise ValueError("Rope lenght can't be greater than maximum length!")
         return dist
-
-
-    def force2(self, main_point: str = 'left') -> np.ndarray:
-        '''
-        Tension force in the RopeFragment at this moment of time derived using 
-        Hooke's law and Newton's law of viscous friction (this force is used 
-        as a component of the right part of the system of ODEs in RopeModel class)
-        '''
-        if main_point == 'left':
-            vector, vel_vector = self.vector_coords(), self.vel_vector_coords()
-        elif main_point == 'right':
-            vector, vel_vector = self.vector_coords(opposite_vector = True), self.vel_vector_coords(opposite_vector = True)
-        else:
-            raise ValueError("Incorrect value of main_point parameter! Must be 'left' or 'right'.")
-
-        
-        vector_norm = self.rope_fragment_len()
-        if vector_norm <= self.rest_len:
-            self.force_val = 0
-            if self.store_force_vals:
-                self.force_vals.append(self.force_val)
-            return np.array([0.0, 0.0])
-        
-        
-        vector /= vector_norm
-        elastic = self.stiffness * (vector_norm - self.rest_len)
-        viscous = self.viscosity * np.dot(vector, vel_vector)
-        self.force_vec = (elastic + viscous) * vector / self.rest_len
-        self.force_val = np.linalg.norm(self.force_vec)
-        if self.store_force_vals:
-            self.force_vals.append(self.force_val)
-        return self.force_vec
 
 
     def force(self, main_point: str = 'left') -> np.ndarray:
@@ -409,20 +342,6 @@ class RopeModel:
         self.set_moving_point_mass(self.ver_rope_mass, self.ver_rope_point_num, rope_type = 'ver')
 
 
-    def split_data2(self, data_list):
-        '''
-        Splitting the data_list containing info about coordinates and velocities of each point in one 
-        general 1d-list into the following format:
-        [data_1, data_2, ..., data_point_num], where data_i is a data list [x, dx, y, dy] 
-        for i-th point of the system.
-        '''
-        splitted_data = []
-        for i in range(0, len(data_list), 4):
-            splitted_data.append(data_list[i : i + 4])
-
-        return splitted_data
-
-
     def split_data(self, system_state_data):
         '''
             Reshaping the system_state_data containing info about coordinates and velocities of each point in one
@@ -432,99 +351,6 @@ class RopeModel:
         '''
         reshaped = np.reshape(system_state_data, (self.general_points_num, 4))
         return reshaped
-
-
-    def system2(self, t, data_list):
-        '''
-        A method for solving the system of differential equations. 
-        This function is passed as an argument into solve_ivp from Scipy. 
-        '''
-        #if self.first_num_step:
-        #    self.first_num_step = False
-        #    return self.init_right_parts
-        
-
-        self.update_system_state(data_list)
-        splitted_data = self.split_data(data_list)
-        updated_right_parts = []  
-        for point_num in range(self.general_points_num):
-            '''
-            This loop generates 4 diff equations for each point of the system:
-            2 equations for x and x' (x coordinate and x velocity (the first derivative of x by time))
-            2 equations for y and y'
-            '''
-            point_mass = self.objects['moving_points'][point_num].point_data['mass'] 
-            if point_num <= self.hor_moving_point_data['moving_points_num'] - 1:
-                #Horizontal rope points
-                left_rope = self.objects['rope_fragments'][point_num]
-                right_rope = self.objects['rope_fragments'][point_num + 1]
-                #right_rope.store_force_vals = True if np.any(np.isclose(t, self.t_eval, atol=2.5*1e-3, rtol=1e-5)) else False   #atol=1.747*1e-4  #atol=5.4*1e-5, rtol=1e-5                     
-                
-
-                if point_num == self.attach_point_id:
-                    #Attachment point case
-                    indx = self.hor_moving_point_data['moving_points_num'] + 1  
-                    vert_rope = self.objects['rope_fragments'][indx]
-
-
-            elif self.hor_moving_point_data['moving_points_num'] - 1 < point_num:
-                #Vertical rope points case 
-                top_rope = self.objects['rope_fragments'][point_num + 1]
-                if point_num < self.general_points_num - 1:
-                    #Vertical rope points (case of unweighted point)
-                    down_rope = self.objects['rope_fragments'][point_num + 2]
-            
-            '''
-            Definitions:
-            w  = x -- x coord of the point in the previous time step
-            dw = w' = z = x' -- velocity of the x coord
-            dz = z' = x'' -- acceleration of the x coord  
-            u  = y -- y coord of the point in the previous time step
-            du = u' = v = y' -- velocity of the y coord 
-            dv = v' = y'' -- acceleration of the y coord 
-            '''
-            w, z, u, v = splitted_data[point_num]
-            
-            if point_num < self.general_points_num - 1: 
-                if point_num == self.attach_point_id: #attachment point case
-                    left_rope_force = left_rope.force(main_point = 'right')
-                    right_rope_force = right_rope.force()
-                    if self.general_points_num == self.hor_moving_point_data['moving_points_num']:
-                        vert_rope_force = np.array([0.0, 0.0])
-                    else:
-                        vert_rope_force = vert_rope.force()
-                    dz = (left_rope_force[0] + right_rope_force[0] + vert_rope_force[0]) / point_mass    #+ 9.81
-                    dv = (left_rope_force[1] + right_rope_force[1] + vert_rope_force[1]) / point_mass     #+ 9.81 
-
-
-                elif point_num > self.hor_moving_point_data['moving_points_num'] - 1:
-                    top_rope_force = top_rope.force(main_point = 'right')
-                    down_rope_force = down_rope.force()
-                    dz = (top_rope_force[0] + down_rope_force[0]) / point_mass    #+ 9.81
-                    dv = (top_rope_force[1] + down_rope_force[1]) / point_mass + 9.81 
-
-
-                else:
-                    left_rope_force = left_rope.force(main_point = 'right')
-                    right_rope_force = right_rope.force()
-                    dz = (left_rope_force[0] + right_rope_force[0]) / point_mass   #+ 9.81
-                    dv = (left_rope_force[1] + right_rope_force[1]) / point_mass #+ 9.81 
-               
-
-            else: #weighted point case
-                weighted_point = self.objects['moving_points'][point_num]
-                vel_vector = weighted_point.si_point_data['velocities']
-                drag_force = 0.80 * np.linalg.norm(vel_vector) * vel_vector
-                top_rope_force = top_rope.force(main_point = 'right')
-                dz = (top_rope_force[0] - drag_force[0]) / point_mass            #+ 9.81
-                dv = (top_rope_force[1] - drag_force[1]) / point_mass + 9.81
-            #Diff eqs for mass point with number point_num
-
-            dw = z
-            du = v
-            updated_right_parts += [dw, dz, du, dv]
-
-        return updated_right_parts
 
 
     def system(self, t, system_state_data):
@@ -612,7 +438,7 @@ class RopeModel:
         '''
         Inverse function (in some sence) to split_data function. 
         This function converts coordinates and velocities of each separate point into the general 
-        2d ndarray, which contains all coords and vels.
+        1d ndarray, which contains all coords and vels.
         '''
         data = []
         for point in self.objects['moving_points']:
@@ -622,40 +448,12 @@ class RopeModel:
         return np.concatenate(data)
     
 
-    def initial_right_parts(self):
-        self.init_right_parts = []
-        self.first_num_step = True
-        for i, point in enumerate(self.objects['moving_points']):
-            mass, vels = point.point_data['mass'], point.si_point_data['velocities']
-            if i < self.hor_moving_point_data['moving_points_num']: 
-                right_part_point_data = [vels[0], self.hor_rope_tension / mass, vels[1], 0]
-            else:
-                right_part_point_data = [vels[0], 0, vels[1], 9.81]
-            self.init_right_parts += right_part_point_data
-
-
     def update_system_state(self, new_system_state):
         state = self.split_data(new_system_state)
         for i, point in enumerate(self.objects['moving_points']):
             new_point_state = state[i]
             point.update_coords(new_point_state[::2])
             point.update_velocities(new_point_state[1::2])
-            #point.update_coords(new_point_state[0], new_point_state[2])  #/ self.scale, new_point_state[2] / self.scale)
-            #point.update_velocities(new_point_state[1], new_point_state[3])
-
-
-    def solve_ivp2(self, initial_cond, duration=1, start_time=0, fps=60, method='RK45'): #RK45
-        '''
-        Method for solving a system of differential equations using 
-        a numerical method at each step of the game cycle  
-        '''
-        fps = fps
-        duration = duration # 1 sec
-        t_span = (start_time, start_time + duration) #(0, 1)
-        self.t_eval = np.linspace(t_span[0], t_span[1], fps) #(0, 0.1, 0.2, 1) 
-        solution = solve_ivp(self.system2, method=method, t_span=t_span, y0=initial_cond,
-                             t_eval=self.t_eval)
-        return solution
 
 
     def solve_ivp(self, initial_cond, duration=1, start_time=0, fps=60, method='RK45'): #RK45

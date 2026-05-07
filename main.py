@@ -27,7 +27,7 @@ if __name__=='__main__':
 
 
     initial_cond = rope.get_ivp_data()
-    #rope.initial_right_parts()
+
 
     if additional_info['print_system_info']:
         fixed_points_table, ropes_table, window_table, experiment_table = get_info(valid_args, rope)
