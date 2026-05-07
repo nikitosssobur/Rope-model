@@ -8,7 +8,7 @@ from typing import Union
 
 DEFAULT_REAL_METER_DIST = 100
 DEFAULT_FALL_HEIGHT = 20
-
+G_CONST = 9.81
 
 
 
@@ -206,7 +206,7 @@ class RopeModel:
         mass = self.get_moving_point_mass(rope_type = 'ver')
         radius = self.ver_rope_point_radius
         if points_velocities is None:
-            y_vels = self.get_linear_vels_distribution(points_num + 1, 0, sqrt(2 * 9.81 * self.fall_height))[1:]
+            y_vels = self.get_linear_vels_distribution(points_num + 1, 0, sqrt(2 * G_CONST * self.fall_height))[1:]
             points_velocities = [(0, y_vel * self.pix_per_metr) for y_vel in y_vels]
 
         for i in range(points_num):
@@ -329,7 +329,7 @@ class RopeModel:
             return ver_fragment_rest_len
         
 
-    def set_ver_rope_data(self, ver_rope_data):
+    def set_ver_rope_data(self, ver_rope_data: dict):
         self.ver_rope_rest_len = ver_rope_data['rest_len'] #/ self.pix_per_metr
         self.ver_rope_density = ver_rope_data['rope_density']
         self.ver_rope_mass = self.ver_rope_density * self.ver_rope_rest_len
@@ -413,7 +413,7 @@ class RopeModel:
                 elif point_num > self.hor_moving_point_data['moving_points_num'] - 1:
                     top_rope_force = top_rope.force(main_point='right')
                     down_rope_force = down_rope.force()
-                    dzdv = (top_rope_force + down_rope_force) / point_mass + np.eye(2)[1] * 9.81
+                    dzdv = (top_rope_force + down_rope_force) / point_mass + np.eye(2)[1] * G_CONST
 
                 else:
                     left_rope_force = left_rope.force(main_point='right')
@@ -423,9 +423,9 @@ class RopeModel:
             else:  # weighted point case
                 weighted_point = self.objects['moving_points'][point_num]
                 vel_vector = weighted_point.si_point_data['velocities']
-                drag_force = 0.80 * np.linalg.norm(vel_vector) * vel_vector
+                drag_force = 0.5 * np.linalg.norm(vel_vector) * vel_vector
                 top_rope_force = top_rope.force(main_point='right')
-                dzdv = (top_rope_force - drag_force) / point_mass + np.eye(2)[1] * 9.81
+                dzdv = (top_rope_force - drag_force) / point_mass + np.eye(2)[1] * G_CONST
             # Diff eqs for mass point with number point_num
 
             current_point_right_part = np.stack((zv, dzdv), axis=1).ravel()  #[z, dz, v, dv]
