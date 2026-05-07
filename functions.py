@@ -53,7 +53,7 @@ def get_info(valid_args, rope):
         
     ropes_table = PrettyTable()
     ropes_table.title = 'Ropes data'
-    ropes_table.add_column(fieldname="Info", column=["points number", "rope_density (kg/m)", "rope mass (in kg)", "tension force (Newtons)",
+    ropes_table.add_column(fieldname="Info", column=["points number", "rope density (kg/m)", "total rope mass (in kg)", "tension force (Newtons)",
                                 "stiffness (Newtons)", "viscosity (Newtons * sec)", "rest lenght (in pixels)", "rest lenght (in meters)", 
                                 "moving point radius (in pixels)", "moving point mass (in kg)", "attachment point index"])
     

@@ -20,7 +20,7 @@
     "viscosity": 1800,
     "rest_len": 25,
     "point_num": 5,
-    "weighted_point_mass": 90,
+    "weighted_point_mass": 80,
     "weighted_point_radius": 8,
     "ver_rope_point_radius": 3,
     "ver_rope_density": 0.07,
